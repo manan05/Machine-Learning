@@ -4,9 +4,7 @@ import random
 from sklearn.model_selection import cross_val_score
 from sklearn.neighbors import KNeighborsClassifier
 
-file_path1 = 'breast-cancer.data'
-file_path2 = 'car.data'
-file_path3 = 'hayes-roth.data'
+file_path = 'breast-cancer.data'
 
 X = []
 y = []
