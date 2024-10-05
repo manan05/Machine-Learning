@@ -1,84 +1,147 @@
-# Assignment 1
-# 1002143328
-
-# imports
-
-from sklearn.datasets import load_iris
-from sklearn.preprocessing import StandardScaler
-import numpy as np
-from collections import Counter
-from sklearn.neighbors import KNeighborsClassifier
+import csv
+import math
+import random
 from sklearn.model_selection import cross_val_score
+from sklearn.neighbors import KNeighborsClassifier
 
+file_path1 = 'breast-cancer.data'
+file_path2 = 'car.data'
+file_path3 = 'hayes-roth.data'
 
-# Load Iris dataset
-iris = load_iris()
-X, y = iris.data, iris.target
+X = []
+y = []
 
-# Euclidean Distance
+label_mapping = {}
+with open(file_path, 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        label = row[0]
+        if label not in label_mapping:
+            label_mapping[label] = len(label_mapping)
+        y.append(label_mapping[label])
+        features = []
+        for feature in row[1:]:
+            if feature not in label_mapping:
+                label_mapping[feature] = len(label_mapping)
+            features.append(label_mapping[feature])
+        X.append(features)
+
 def euclidean_distance(x1, x2):
-    distance_squared = np.sum((x1-x2) ** 2)
-    distance = np.sqrt(distance_squared)
-    return distance
+    return math.sqrt(sum((a - b) ** 2 for a, b in zip(x1, x2)))
 
-# Calculate KNN Function
-def knn(X_train, y_train, X_test, k):
-    distances = []
-    for i in range(len(X_train)):
-        dist = euclidean_distance(X_test, X_train[i])
-        distances.append((dist, y_train[i]))
-    
-    k_neighbors = sorted(distances, key=lambda x: x[0])[:k]
-    k_nearest_labels = [label for _, label in k_neighbors]
-    most_common = Counter(k_nearest_labels).most_common(1)
-    
-    return most_common[0][0]
+def manhattan_distance(x1, x2):
+    return sum(abs(a - b) for a, b in zip(x1, x2))
 
-# k-Fold Cross Validation
-def k_fold_cross_validation(X, y, k_neighbors, k_folds=10):
-    fold_size = len(X) // k_folds
-    accuracies = []
-    
-    for i in range(k_folds):
-        start, end = i * fold_size, (i + 1) * fold_size
-        X_val, y_val = X[start:end], y[start:end]
-        X_train = np.concatenate((X[:start], X[end:]), axis=0)
-        y_train = np.concatenate((y[:start], y[end:]), axis=0)
+def minkowski_distance(x1, x2, p=3):
+    return sum(abs(a - b) ** p for a, b in zip(x1, x2)) ** (1/p)
+
+def hamming_distance(x1, x2):
+    return sum(a != b for a, b in zip(x1, x2)) / len(x1)
+
+class KNN:
+    def __init__(self, k=3, distance='euclidean', p=3):
+        self.k = k
+        self.distance = distance
+        self.p = p
+
+    def fit(self, X, y):
+        self.X_train = X
+        self.y_train = y
+
+    def predict(self, X):
+        y_pred = [self._predict(x) for x in X]
+        return y_pred
+
+    def _predict(self, x):
+        if self.distance == 'euclidean':
+            distances = [euclidean_distance(x, x_train) for x_train in self.X_train]
+        elif self.distance == 'manhattan':
+            distances = [manhattan_distance(x, x_train) for x_train in self.X_train]
+        elif self.distance == 'minkowski':
+            distances = [minkowski_distance(x, x_train, self.p) for x_train in self.X_train]
+        elif self.distance == 'hamming':
+            distances = [hamming_distance(x, x_train) for x_train in self.X_train]
+        else:
+            raise ValueError("Unsupported distance metric")
         
-        correct = 0
-        for j in range(len(X_val)):
-            prediction = knn(X_train, y_train, X_val[j], k_neighbors)
-            if prediction == y_val[j]:
-                correct += 1
-                
-        accuracy = correct / len(X_val)
-        accuracies.append(accuracy)
-    
-    return np.mean(accuracies)
+ 
+        k_indices = sorted(range(len(distances)), key=lambda i: distances[i])[:self.k]
+        k_nearest_labels = [self.y_train[i] for i in k_indices]
+        
 
-# Comparison with Scikit-Learn KNN
-def compare_with_sklearn(X, y, k_neighbors):
-    knn_sklearn = KNeighborsClassifier(n_neighbors=k_neighbors)
-    scores = cross_val_score(knn_sklearn, X, y, cv=10)
-    return np.mean(scores)
+        label_counts = {}
+        for label in k_nearest_labels:
+            if label in label_counts:
+                label_counts[label] += 1
+            else:
+                label_counts[label] = 1
+        
 
-def main():
-    # Load Iris dataset
-    iris = load_iris()
-    X, y = iris.data, iris.target
-    
-    # Set parameters
-    k_neighbors = 5  # Choose the number of neighbors
-    
-    # Evaluate your KNN implementation with 10-fold cross-validation
-    accuracy_knn = k_fold_cross_validation(X, y, k_neighbors)
-    print(f'My KNN accuracy: {accuracy_knn}')
-    
-    # Evaluate Scikit-Learn KNN with 10-fold cross-validation
-    accuracy_sklearn = compare_with_sklearn(X, y, k_neighbors)
-    print(f'Scikit-Learn KNN accuracy: {accuracy_sklearn}')
-    
-    # You can also perform hypothesis testing here for a statistical comparison
+        most_common_label = max(label_counts, key=label_counts.get)
+        return most_common_label
 
-if __name__ == '__main__':
-    main()
+def accuracy_score(y_true, y_pred):
+    correct = sum(1 for true, pred in zip(y_true, y_pred) if true == pred)
+    return correct / len(y_true)
+
+def k_fold_cross_validation(model, X, y, k=10):
+    fold_size = len(X) // k
+    scores = []
+    indices = list(range(len(X)))
+    random.shuffle(indices)
+
+    for fold in range(k):
+        start, end = fold * fold_size, (fold + 1) * fold_size if fold < k-1 else len(X)
+        test_indices = indices[start:end]
+        train_indices = indices[:start] + indices[end:]
+
+        X_train = [X[i] for i in train_indices]
+        y_train = [y[i] for i in train_indices]
+        X_test = [X[i] for i in test_indices]
+        y_test = [y[i] for i in test_indices]
+
+        model.fit(X_train, y_train)
+        predictions = model.predict(X_test)
+        score = accuracy_score(y_test, predictions)
+        scores.append(score)
+
+    return sum(scores) / k, scores
+
+knn_euclidean = KNN(k=3, distance='euclidean')
+knn_manhattan = KNN(k=3, distance='manhattan')
+knn_minkowski = KNN(k=3, distance='minkowski', p=3) 
+knn_hamming = KNN(k=3, distance='hamming')
+mean_accuracy1, accuracies1 = k_fold_cross_validation(knn_euclidean, X, y, k=10)
+mean_accuracy2, accuracies2 = k_fold_cross_validation(knn_manhattan, X, y, k=10)
+mean_accuracy3, accuracies3 = k_fold_cross_validation(knn_minkowski, X, y, k=10)
+mean_accuracy4, accuracies4 = k_fold_cross_validation(knn_hamming, X, y, k=10)
+
+
+print(f"KNN Mean Accuracies:")
+print(f"Using Euclidean distance :{mean_accuracy1*100}%")
+print(f"Using Manhattan distance :{mean_accuracy2*100}%")
+print(f"Using Minkowski distance :{mean_accuracy3*100}%")
+print(f"Using Hamming distance :{mean_accuracy4*100}%")
+
+
+knn1 = KNeighborsClassifier(n_neighbors=3, metric='euclidean')
+knn2 = KNeighborsClassifier(n_neighbors=3, metric='manhattan')
+knn3 = KNeighborsClassifier(n_neighbors=3, metric='minkowski',p=3)
+knn4 = KNeighborsClassifier(n_neighbors=3, metric='hamming')
+
+cv_scores1 = cross_val_score(knn1, X, y, cv=10)
+cv_scores2 = cross_val_score(knn2, X, y, cv=10)
+cv_scores3 = cross_val_score(knn3, X, y, cv=10)
+cv_scores4 = cross_val_score(knn4, X, y, cv=10)
+
+
+mean_accuracy1 = sum(cv_scores1) / len(cv_scores1)
+mean_accuracy2 = sum(cv_scores2) / len(cv_scores2)
+mean_accuracy3 = sum(cv_scores3) / len(cv_scores3)
+mean_accuracy4 = sum(cv_scores4) / len(cv_scores4)
+
+
+print(f"Sk-learn KNN Euclidean Mean Accuracy: {mean_accuracy1*100}%")
+print(f"Sk-learn KNN Manhattan Mean Accuracy: {mean_accuracy2*100}%")
+print(f"Sk-learn KNN Minkowski Mean Accuracy: {mean_accuracy3*100}%")
+print(f"Sk-learn KNN Hamming Mean Accuracy: {mean_accuracy4*100}%")
