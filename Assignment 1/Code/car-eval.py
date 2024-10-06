@@ -1,30 +1,48 @@
 import csv
 import math
 import random
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
 
-# Dataset: Breast Cancer Dataset
-file_path = "Machine-Learning/Assignment 1/Datasets/cancer.data"
-X_raw = []
-y_raw = []
+# Dataset: Car Evaluation Dataset
+file_path = "Machine-Learning/Assignment 1/Datasets/car.data"
+X = []
+y = []
 
-with open(file_path, 'r') as file:
+label_mapping = {}
+feature_labels = ['buying', 'maint', 'doors', 'persons', 'lug_boot', 'safety', 'class']
+mapping_count = 0
+
+# Load and preprocess the dataset
+with open(file_path, "r") as file:
     reader = csv.reader(file)
     for row in reader:
-        y_raw.append(row[0])
-        X_raw.append(row[1:])
+        features = row[:-1]
+        numerical_features = []
+        for i, feature in enumerate(features):
+            if feature not in label_mapping:
+                label_mapping[feature] = mapping_count
+                mapping_count += 1
+            numerical_features.append(label_mapping[feature])
+        X.append(numerical_features)
+        
+        label = row[-1]
+        if label not in label_mapping:
+            label_mapping[label] = mapping_count
+            mapping_count += 1
+        y.append(label_mapping[label])
 
-enc = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
-X_encoded = enc.fit_transform(X_raw)
+print("Feature Mapping:")
+for feature, index in label_mapping.items():
+    print(f"{feature}: {index}")
 
-label_mapping = {'no-recurrence-events': 0, 'recurrence-events': 1}
-y = [label_mapping[label] for label in y_raw]
+print("\nFirst 5 Transformed Features (X):")
+for i in range(5):
+    print(X[i])
 
-scaler = StandardScaler()
-X = scaler.fit_transform(X_encoded)
+print("\nFirst 5 Labels (y):")
+for i in range(5):
+    print(y[i])
 
-# Distance Functions
 def euclidean_distance(x1, x2):
     return math.sqrt(sum((a - b) ** 2 for a, b in zip(x1, x2)))
 
@@ -32,11 +50,11 @@ def manhattan_distance(x1, x2):
     return sum(abs(a - b) for a, b in zip(x1, x2))
 
 def minkowski_distance(x1, x2, p=3):
-    return sum(abs(a - b) ** p for a, b in zip(x1, x2)) ** (1/p)
+    return sum(abs(a - b) ** p for a, b in zip(x1, x2)) ** (1 / p)
 
 # Custom KNN Classifier
 class KNN:
-    def __init__(self, k=5, distance='euclidean', p=3):
+    def __init__(self, k=5, distance="euclidean", p=3):
         self.k = k
         self.distance = distance
         self.p = p
@@ -46,29 +64,31 @@ class KNN:
         self.y_train = y
 
     def predict(self, X):
-        y_pred = [self._predict(x) for x in X]
-        return y_pred
+        return [self._predict(x) for x in X]
 
     def _predict(self, x):
-        if self.distance == 'euclidean':
+        if self.distance == "euclidean":
             distances = [euclidean_distance(x, x_train) for x_train in self.X_train]
-        elif self.distance == 'manhattan':
+        elif self.distance == "manhattan":
             distances = [manhattan_distance(x, x_train) for x_train in self.X_train]
-        elif self.distance == 'minkowski':
+        elif self.distance == "minkowski":
             distances = [minkowski_distance(x, x_train, self.p) for x_train in self.X_train]
-
+        
         k_indices = sorted(range(len(distances)), key=lambda i: distances[i])[:self.k]
         k_nearest_labels = [self.y_train[i] for i in k_indices]
 
-        most_common_label = max(set(k_nearest_labels), key=k_nearest_labels.count)
-        return most_common_label
+        label_count = {}
+        for label in k_nearest_labels:
+            label_count[label] = label_count.get(label, 0) + 1
+
+        return max(label_count, key=label_count.get)
 
 # Accuracy calculation
 def accuracy_score(y_true, y_pred):
     correct = sum(1 for true, pred in zip(y_true, y_pred) if true == pred)
-    return correct / len(y_true)
+    return correct / len(y_true) if y_true else 0
 
-# K-fold cross-validation
+# Custom K-Fold Cross-Validation
 def k_fold_cross_validation(custom_model, sklearn_model, X, y, k=10):
     fold_size = len(X) // k
     custom_scores = []
@@ -98,17 +118,17 @@ def k_fold_cross_validation(custom_model, sklearn_model, X, y, k=10):
 
     return custom_scores, sklearn_scores
 
-# Initialize and test custom KNN
-knn_euclidean = KNN(k=5, distance='euclidean')
-knn_manhattan = KNN(k=5, distance='manhattan')
-knn_minkowski = KNN(k=5, distance='minkowski', p=3)
+# Custom KNN Models
+knn_euclidean = KNN(k=5, distance="euclidean")
+knn_manhattan = KNN(k=5, distance="manhattan")
+knn_minkowski = KNN(k=5, distance="minkowski", p=3)
 
 # Scikit-learn KNN
 knn1 = KNeighborsClassifier(n_neighbors=5, metric='euclidean')
 knn2 = KNeighborsClassifier(n_neighbors=5, metric='manhattan')
 knn3 = KNeighborsClassifier(n_neighbors=5, metric='minkowski', p=3)
 
-# Perform K-fold cross-validation and collect accuracies
+# Perform K-fold cross-validation
 custom_scores_euclidean, sklearn_scores_euclidean = k_fold_cross_validation(knn_euclidean, knn1, X, y, k=10)
 custom_scores_manhattan, sklearn_scores_manhattan = k_fold_cross_validation(knn_manhattan, knn2, X, y, k=10)
 custom_scores_minkowski, sklearn_scores_minkowski = k_fold_cross_validation(knn_minkowski, knn3, X, y, k=10)
@@ -124,13 +144,16 @@ print(f"Scikit-learn KNN Euclidean Mean Accuracy: {sum(sklearn_scores_euclidean)
 print(f"Scikit-learn KNN Manhattan Mean Accuracy: {sum(sklearn_scores_manhattan) / len(sklearn_scores_manhattan) * 100}%")
 print(f"Scikit-learn KNN Minkowski Mean Accuracy: {sum(sklearn_scores_minkowski) / len(sklearn_scores_minkowski) * 100}%")
 
-# Custom Paired T-test implementation
 def custom_paired_t_test(sample1, sample2):
     differences = [a - b for a, b in zip(sample1, sample2)]
+
     mean_diff = sum(differences) / len(differences)
+
     variance = sum((d - mean_diff) ** 2 for d in differences) / (len(differences) - 1)
     std_diff = math.sqrt(variance)
+
     n = len(differences)
+
     if std_diff == 0:
         if mean_diff == 0:
             return 0, n - 1
@@ -138,31 +161,35 @@ def custom_paired_t_test(sample1, sample2):
             return float('inf') if mean_diff > 0 else float('-inf'), n - 1
     
     t_stat = mean_diff / (std_diff / math.sqrt(n))
+
     df = n - 1
 
     return t_stat, df
 
-
+# Paired T-tests using custom t-test function
 t_stat_euclidean, df_euclidean = custom_paired_t_test(custom_scores_euclidean, sklearn_scores_euclidean)
 t_stat_manhattan, df_manhattan = custom_paired_t_test(custom_scores_manhattan, sklearn_scores_manhattan)
 t_stat_minkowski, df_minkowski = custom_paired_t_test(custom_scores_minkowski, sklearn_scores_minkowski)
 
 alpha = 0.05
-print(f"\nPaired T-test results for KNN using Euclidean distance:")
+
+# For a two-tailed test at alpha = 0.05, we compare t-statistic to critical value ~1.96 (normal distribution assumption)
+
+print(f"\nCustom Paired T-test results for KNN using Euclidean distance:")
 print(f"T-statistic: {t_stat_euclidean}, Degrees of Freedom: {df_euclidean}")
 if abs(t_stat_euclidean) > 1.96:
     print("Significant difference between custom and Scikit-learn KNN (Euclidean).")
 else:
     print("No significant difference between custom and Scikit-learn KNN (Euclidean).")
 
-print(f"\nPaired T-test results for KNN using Manhattan distance:")
+print(f"\nCustom Paired T-test results for KNN using Manhattan distance:")
 print(f"T-statistic: {t_stat_manhattan}, Degrees of Freedom: {df_manhattan}")
 if abs(t_stat_manhattan) > 1.96:
     print("Significant difference between custom and Scikit-learn KNN (Manhattan).")
 else:
     print("No significant difference between custom and Scikit-learn KNN (Manhattan).")
 
-print(f"\nPaired T-test results for KNN using Minkowski distance:")
+print(f"\nCustom Paired T-test results for KNN using Minkowski distance:")
 print(f"T-statistic: {t_stat_minkowski}, Degrees of Freedom: {df_minkowski}")
 if abs(t_stat_minkowski) > 1.96:
     print("Significant difference between custom and Scikit-learn KNN (Minkowski).")
