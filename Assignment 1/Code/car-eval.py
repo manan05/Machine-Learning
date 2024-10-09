@@ -3,46 +3,44 @@ import math
 import random
 from sklearn.neighbors import KNeighborsClassifier
 
+# Making the output same in every run
+random.seed(42)
+
 # Dataset: Car Evaluation Dataset
-file_path = "Machine-Learning/Assignment 1/Datasets/car.data"
+file_path = "Assignment 1\Datasets\car.data"
 X = []
 y = []
 
+# Separate mappings for features and labels
+feature_mapping = {}
 label_mapping = {}
-feature_labels = ['buying', 'maint', 'doors', 'persons', 'lug_boot', 'safety', 'class']
-mapping_count = 0
+feature_mapping_count = 0
+label_mapping_count = 0
+
+X, y = [], []
 
 # Load and preprocess the dataset
 with open(file_path, "r") as file:
     reader = csv.reader(file)
     for row in reader:
+        # Processing features
         features = row[:-1]
         numerical_features = []
-        for i, feature in enumerate(features):
-            if feature not in label_mapping:
-                label_mapping[feature] = mapping_count
-                mapping_count += 1
-            numerical_features.append(label_mapping[feature])
+        for feature in features:
+            if feature not in feature_mapping:
+                feature_mapping[feature] = feature_mapping_count
+                feature_mapping_count += 1
+            numerical_features.append(feature_mapping[feature])
         X.append(numerical_features)
-        
+
+        # Processing labels
         label = row[-1]
         if label not in label_mapping:
-            label_mapping[label] = mapping_count
-            mapping_count += 1
+            label_mapping[label] = label_mapping_count
+            label_mapping_count += 1
         y.append(label_mapping[label])
 
-print("Feature Mapping:")
-for feature, index in label_mapping.items():
-    print(f"{feature}: {index}")
-
-print("\nFirst 5 Transformed Features (X):")
-for i in range(5):
-    print(X[i])
-
-print("\nFirst 5 Labels (y):")
-for i in range(5):
-    print(y[i])
-
+# Distance functions
 def euclidean_distance(x1, x2):
     return math.sqrt(sum((a - b) ** 2 for a, b in zip(x1, x2)))
 
@@ -166,32 +164,30 @@ def custom_paired_t_test(sample1, sample2):
 
     return t_stat, df
 
-# Paired T-tests using custom t-test function
 t_stat_euclidean, df_euclidean = custom_paired_t_test(custom_scores_euclidean, sklearn_scores_euclidean)
 t_stat_manhattan, df_manhattan = custom_paired_t_test(custom_scores_manhattan, sklearn_scores_manhattan)
 t_stat_minkowski, df_minkowski = custom_paired_t_test(custom_scores_minkowski, sklearn_scores_minkowski)
 
 alpha = 0.05
 
-# For a two-tailed test at alpha = 0.05, we compare t-statistic to critical value ~1.96 (normal distribution assumption)
 
 print(f"\nCustom Paired T-test results for KNN using Euclidean distance:")
 print(f"T-statistic: {t_stat_euclidean}, Degrees of Freedom: {df_euclidean}")
 if abs(t_stat_euclidean) > 1.96:
-    print("Significant difference between custom and Scikit-learn KNN (Euclidean).")
+    print("Significant difference between custom and Scikit-learn KNN (Euclidean). We accept the null hypothesis.")
 else:
-    print("No significant difference between custom and Scikit-learn KNN (Euclidean).")
+    print("No significant difference between custom and Scikit-learn KNN (Euclidean). We reject the null hypothesis.")
 
 print(f"\nCustom Paired T-test results for KNN using Manhattan distance:")
 print(f"T-statistic: {t_stat_manhattan}, Degrees of Freedom: {df_manhattan}")
 if abs(t_stat_manhattan) > 1.96:
-    print("Significant difference between custom and Scikit-learn KNN (Manhattan).")
+    print("Significant difference between custom and Scikit-learn KNN (Manhattan). We accept the null hypothesis.")
 else:
-    print("No significant difference between custom and Scikit-learn KNN (Manhattan).")
+    print("No significant difference between custom and Scikit-learn KNN (Manhattan). We reject the null hypothesis.")
 
 print(f"\nCustom Paired T-test results for KNN using Minkowski distance:")
 print(f"T-statistic: {t_stat_minkowski}, Degrees of Freedom: {df_minkowski}")
 if abs(t_stat_minkowski) > 1.96:
-    print("Significant difference between custom and Scikit-learn KNN (Minkowski).")
+    print("Significant difference between custom and Scikit-learn KNN (Minkowski). We accept the null hypothesis.")
 else:
-    print("No significant difference between custom and Scikit-learn KNN (Minkowski).")
+    print("No significant difference between custom and Scikit-learn KNN (Minkowski). We reject the null hypothesis.")

@@ -4,8 +4,11 @@ import random
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
 
+# Making the output same in every run
+random.seed(42)
+
 # Dataset: Breast Cancer Dataset
-file_path = "Machine-Learning/Assignment 1/Datasets/cancer.data"
+file_path = "Assignment 1\Datasets\cancer.data"
 X_raw = []
 y_raw = []
 
@@ -36,7 +39,7 @@ def minkowski_distance(x1, x2, p=3):
 
 # Custom KNN Classifier
 class KNN:
-    def __init__(self, k=5, distance='euclidean', p=3):
+    def __init__(self, k=3, distance='euclidean', p=3):
         self.k = k
         self.distance = distance
         self.p = p
@@ -99,14 +102,14 @@ def k_fold_cross_validation(custom_model, sklearn_model, X, y, k=10):
     return custom_scores, sklearn_scores
 
 # Initialize and test custom KNN
-knn_euclidean = KNN(k=5, distance='euclidean')
-knn_manhattan = KNN(k=5, distance='manhattan')
-knn_minkowski = KNN(k=5, distance='minkowski', p=3)
+knn_euclidean = KNN(k=3, distance='euclidean')
+knn_manhattan = KNN(k=3, distance='manhattan')
+knn_minkowski = KNN(k=3, distance='minkowski', p=3)
 
 # Scikit-learn KNN
-knn1 = KNeighborsClassifier(n_neighbors=5, metric='euclidean')
-knn2 = KNeighborsClassifier(n_neighbors=5, metric='manhattan')
-knn3 = KNeighborsClassifier(n_neighbors=5, metric='minkowski', p=3)
+knn1 = KNeighborsClassifier(n_neighbors=3, metric='euclidean')
+knn2 = KNeighborsClassifier(n_neighbors=3, metric='manhattan')
+knn3 = KNeighborsClassifier(n_neighbors=3, metric='minkowski', p=3)
 
 # Perform K-fold cross-validation and collect accuracies
 custom_scores_euclidean, sklearn_scores_euclidean = k_fold_cross_validation(knn_euclidean, knn1, X, y, k=10)
@@ -124,7 +127,6 @@ print(f"Scikit-learn KNN Euclidean Mean Accuracy: {sum(sklearn_scores_euclidean)
 print(f"Scikit-learn KNN Manhattan Mean Accuracy: {sum(sklearn_scores_manhattan) / len(sklearn_scores_manhattan) * 100}%")
 print(f"Scikit-learn KNN Minkowski Mean Accuracy: {sum(sklearn_scores_minkowski) / len(sklearn_scores_minkowski) * 100}%")
 
-# Custom Paired T-test implementation
 def custom_paired_t_test(sample1, sample2):
     differences = [a - b for a, b in zip(sample1, sample2)]
     mean_diff = sum(differences) / len(differences)
@@ -151,20 +153,20 @@ alpha = 0.05
 print(f"\nPaired T-test results for KNN using Euclidean distance:")
 print(f"T-statistic: {t_stat_euclidean}, Degrees of Freedom: {df_euclidean}")
 if abs(t_stat_euclidean) > 1.96:
-    print("Significant difference between custom and Scikit-learn KNN (Euclidean).")
+    print("Significant difference between custom and Scikit-learn KNN (Euclidean). We accept the Null hypothesis.")
 else:
-    print("No significant difference between custom and Scikit-learn KNN (Euclidean).")
+    print("No significant difference between custom and Scikit-learn KNN (Euclidean). We reject the Null hypothesis.")
 
 print(f"\nPaired T-test results for KNN using Manhattan distance:")
 print(f"T-statistic: {t_stat_manhattan}, Degrees of Freedom: {df_manhattan}")
 if abs(t_stat_manhattan) > 1.96:
-    print("Significant difference between custom and Scikit-learn KNN (Manhattan).")
+    print("Significant difference between custom and Scikit-learn KNN (Manhattan). We accept the Null hypothesis.")
 else:
-    print("No significant difference between custom and Scikit-learn KNN (Manhattan).")
+    print("No significant difference between custom and Scikit-learn KNN (Manhattan). We reject the Null hypothesis.")
 
 print(f"\nPaired T-test results for KNN using Minkowski distance:")
 print(f"T-statistic: {t_stat_minkowski}, Degrees of Freedom: {df_minkowski}")
 if abs(t_stat_minkowski) > 1.96:
-    print("Significant difference between custom and Scikit-learn KNN (Minkowski).")
+    print("Significant difference between custom and Scikit-learn KNN (Minkowski). We accept the Null hypothesis.")
 else:
-    print("No significant difference between custom and Scikit-learn KNN (Minkowski).")
+    print("No significant difference between custom and Scikit-learn KNN (Minkowski). We reject the Null hypothesis.")
