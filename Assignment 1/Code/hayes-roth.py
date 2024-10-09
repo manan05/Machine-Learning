@@ -3,8 +3,11 @@ import random
 import csv
 from sklearn.neighbors import KNeighborsClassifier
 
+# Making the output same in every run
+random.seed(42)
+
 # Dataset: Hayes-Roth Dataset
-file_path = 'Machine-Learning/Assignment 1/Datasets/hayes-roth.data'
+file_path = 'Assignment 1\Datasets\hayes-roth.data'
 X = []
 y = []
 
