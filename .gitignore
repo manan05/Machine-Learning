@@ -1,0 +1,41 @@
+# Virtual environment
+myenv/
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Data files (optional, if you're downloading datasets)
+data/
+*.csv
+*.h5
+*.hdf5
+
+# Logs and output files
+*.log
+*.out
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# System files (MacOS/Linux/Windows)W
+.DS_Store
+Thumbs.db
+
+# PyTorch checkpoints
+*.pth
+*.pt
+
+# IDE configuration files (optional, depending on the IDE you're using)
+.vscode/
+.idea/
+
+# Pipenv and virtualenv specific files (if using other virtual env tools)
+Pipfile
+Pipfile.lock
+
+# Files created by installing packages or running the project
+.env
+.env.local
