@@ -43,6 +43,7 @@ epochs = 10
 
 # MNIST dataset (from torchvision, for simplicity)
 transform = transforms.Compose([
+    transforms.Resize((32, 32)),  # Resize MNIST images to 32x32
     transforms.ToTensor(),
     transforms.Normalize((0.1307,), (0.3081,))  # Normalization for MNIST
 ])
